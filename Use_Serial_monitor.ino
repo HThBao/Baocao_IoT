@@ -1,12 +1,17 @@
+#define LED_ID_A "00"
+#define LED_ID_B "01"
 
-  char check_ID[3];
-  char Led_ID[3];
-  char status_led[3];
+#define LED_TURN_ON "00"
+#define LED_TURN_OFF "01"
+
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(9600); //Set up UART 
   pinMode(8, OUTPUT);
-  digitalWrite(8, LOW); // lúc đầu ta để LED tắt
+  pinMode(9, OUTPUT);
+  //Turn off two LED
+  digitalWrite(8, LOW);
+  digitalWrite(9, LOW);
 }
 
 void loop()
@@ -15,40 +20,59 @@ void loop()
     String data = Serial.readStringUntil('\n'); // đọc giá trị gửi đến cho đến khi gặp kí tự xuống dòng \n
     String data_id = data.substring(0,2);
     String data_id_device = data.substring(2,4);
+    String data_status = data.substring(4,6);
+
+    /*
+    //Check data 
     Serial.print("data_id: ");
     Serial.println(data_id);
 
-      Serial.print("data_id_device: ");
+    Serial.print("data_id_device: ");
     Serial.println(data_id_device);
-    
-//    if(text == "0000") {
-//        digitalWrite(8,HIGH); // bật LED
-//        Serial.println("LED Green is turned ON");  // gửi lại thông báo lên Serial Monitor
-//    }
-//    
-//    if(text == "0001") {
-//        digitalWrite(8,LOW); // tắt LED
-//        Serial.println("LED Green is turned OFF");
-//    }
-//
-//      if(text == "0100") {
-//        digitalWrite(9,HIGH); // bật LED
-//        Serial.println("LED Red is turned ON");  // gửi lại thông báo lên Serial Monitor
-//    }
-//    
-//    if(text == "0101") {
-//        digitalWrite(9,LOW); // tắt LED
-//        Serial.println("LED Red is turned OFF");
-//    }
-//        if(text == "0200") {
-//        digitalWrite(10,HIGH); // bật LED
-//        Serial.println("LED Yellow is turned ON");  // gửi lại thông báo lên Serial Monitor
-//    }
-//    
-//    if(text == "0201") {
-//        digitalWrite(10,LOW); // tắt LED
-//        Serial.println("LED Yellow is turned OFF");
-//    }
+
+    Serial.print("data_status: ");
+    Serial.println(data_status);
+    */
+ 
+    if(data_id == "00")
+    {
+      LED_CONTROL(data_id_device,data_status);
+    }
+
+    //if(data_id == "01")
+
+
+
+      
     
    }
  }
+
+void LED_CONTROL(String led_id, String led_status)
+{
+      if(led_id == "00") {
+        if( led_status == LED_TURN_ON )
+        {
+          digitalWrite(8,HIGH); // bật LED
+          Serial.println("LED A is turned ON");  // gửi lại thông báo lên Serial Monitor
+        }
+        else
+        {
+          digitalWrite(8,LOW); // tắt LED
+          Serial.println("LED A is turned OFF");
+        }
+    }
+    
+      if(led_id == "01") {
+        if( led_status == LED_TURN_ON )
+        {
+          digitalWrite(9,HIGH); // bật LED
+          Serial.println("LED B is turned ON"); 
+        }
+        else
+        {
+          digitalWrite(9,LOW); // tắt LED
+          Serial.println("LED B is turned OFF");
+        }
+    }
+}  
