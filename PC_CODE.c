@@ -1,10 +1,11 @@
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdint.h>
 #include <windows.h>
 
 #define BUFFER_SIZE 256
-#define header  0x26
+#define header 0x26
 HANDLE open_port(const char* device, unsigned long baud_rate, unsigned char bit_size, unsigned char parity) {
     HANDLE port = CreateFileA(device, GENERIC_READ | GENERIC_WRITE, 0, NULL,
         OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -96,6 +97,7 @@ int uart_receive(HANDLE port, int* RX_buf_len, unsigned char* RX_buf) {
         }
         *RX_buf_len = 3;
         RX_buf[a] = readbuf;
+
     }
     return 0;
 }
@@ -120,10 +122,9 @@ int main()
 
     TX_buf_len = 3;
     printf("Enter 1-byte data (HEX) for sending:\n");
-    TX_buf[0] = 0x16;
+    TX_buf[0] = 0x26;
     scanf("%x", &TX_buf[1]);
     scanf("%x", &TX_buf[2]);
-
 
     // transmit data
     status = uart_transmit(port, TX_buf, TX_buf_len);
@@ -135,19 +136,12 @@ int main()
     if (status != 0)
         return -1;
 
-    // Display 
+    // Display
     printf("Received packet: ");
-    if(RX_buf[0] != header)
-    {
-        printf("Wrong header");
+    for (int j = 0; j < RX_buf_len; j++) {
+        printf("%x\t", RX_buf[j]);
     }
-    else
-    {
-        for (int j = 0; j < RX_buf_len; j++) {
 
-            printf("%x\t", RX_buf[j]);
-        }
-    }
     // Close the serial port.
     if (!CloseHandle(port))
     {
