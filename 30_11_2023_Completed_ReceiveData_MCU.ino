@@ -16,10 +16,10 @@
 #define OFFSET_TRAILER_1 5
 #define OFFSET_TRAILER_2 6
 
-#define HEADER_1 0xab
-#define HEADER_2 0xcd
-#define TRAILER_1 0xe1
-#define TRAILER_2 0xe2
+#define HEADER_1 0xAB
+#define HEADER_2 0xCD
+#define TRAILER_1 0xE1
+#define TRAILER_2 0xE2
 
 #define MAX_TABLE 4
 
@@ -171,6 +171,108 @@ int uart_receive(unsigned int* data_temp) {
   tx_pack[i] = TRAILER_1;
   tx_pack[i + 1] = TRAILER_2;
 }
+//Control Door -----------------------------
+void doorcontrol_function(int data[])
+{
+  Serial.print("\n Doing: Control Door ");
+  if(data[4] == DOOR_A_ID)
+  {
+    if(data[5] == DOOR_OPEN)
+    {
+      //DOOR A
+      Serial.print("OPEN DOOR A");
+      //code to open door A
+    }
+    else
+    {
+      Serial.print("CLOSE DOOR A");
+      //code to close door A
+    }
+  }
+  else
+  {
+    if(data[5] == DOOR_OPEN)
+    {
+      //DOOR B
+      Serial.print("\nOPEN DOOR B");
+      //code to open door B
+    }
+    else
+    {
+      Serial.print("\nCLOSE DOOR B");
+      //code to close door B
+    }
+  }
+
+}
+//lIGHT CONTROL ----------------------------
+void lightcontrol_function(int data[])
+{
+  /*struct of data for light: 
+  data[0] - header
+  data[1] - process
+  data[2] - LIGHT_ID
+  data[3] - LIGHT_STATUS
+  */
+  Serial.print("\n Doing: Control Light ");
+  if(data[4] == LIGHT_A_ID)
+  {
+    if(data[5] == LIGHT_ON)
+    {
+      //LIGHT A
+      Serial.print("\nTURN ON LIGHT A");
+      //code to turn on light A
+    }
+    else
+    {
+      Serial.print("\nTURN OFF LIGHT A");
+      //code to turn off light A
+    }
+  }
+  else
+  {
+    //LIGHT B
+      if(data[5] == LIGHT_ON)
+    {
+      Serial.print("\nTURN ON LIGHT B");
+      //code to turn on light B
+    }
+    else
+    {
+      Serial.print("\nTURN OFF LIGHT B");
+      //code to turn off light B
+    }
+  }
+}
+//Read Status Door ---------------------------
+void readstatusdoor_function(int data[])
+{
+  //Call function read status of door
+  //Describe this finction: This function is requested feedback data which about status door 
+  //It receive data about id door then check status that door, final it resend data to PC
+  
+  tx_buf_len =  2; //It include DoorID and DoorStatus
+  //Example: Read status door is opening now.
+  cmd = data[2];        //data[2] is CMD from PC send to MCU.
+  tx_buf[0] = data[4]; //data[4] is DoorID which PC need check status
+  tx_buf[1] = READ_STATUS_DOOR_OPEN;
+  compose_packet();
+  uart_transmit();
+  Serial.print("\n Reading status of door ");
+}
+//Setup time for LED --------------------------
+void led_control_function(int data[])
+{
+  //Call function to setup time to led
+  Serial.print("\n setup time to led ");
+}
+//Read Temperature -----------------------------
+void read_temperature_function(int data[])
+{
+  //Call function to setup time to led
+  Serial.print("\n Read Temperature from sensor ");
+}
+
 
 void setup() {
   Serial.begin(9600);                       
@@ -181,12 +283,34 @@ void loop() {
     status = uart_receive(data_receive);
     if(status ==  RET_SUCCESS)
     {
-      Serial.print("Data: \n");
-      for(int i=0;i<10;i++)
+      int process = data_receive[2]; //CMD here. It will be decide on the operation of device
+      switch(process)
       {
-        Serial.println(data_receive[i]);
-        Serial.print("\t");
+        case DOOR_CONTROL:
+          doorcontrol_function(data_receive);
+        break;
+        
+        case LIGHT_CONTROL:
+          lightcontrol_function(data_receive);
+        break;
+
+        case READ_STATUS_DOOR:
+          readstatusdoor_function(data_receive);
+        break;
+        
+        case LED_ID:
+          led_control_function(data_receive);
+        break;
+
+        case FLASH_ID:
+          read_temperature_function(data_receive);
+        break;
+
+
+    default:
+      Serial.print("\nWrong data, It will not active");
       }
+      
     }
 
     
