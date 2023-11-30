@@ -1,3 +1,9 @@
+/*
+* Author: HoThanhBao
+* Day: 30/11/2023
+* This code only simple module tranfer data between MCU and PC bu UART protocol
+*/
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdint.h>
@@ -18,10 +24,10 @@
 #define OFFSET_TRAILER_1 5
 #define OFFSET_TRAILER_2 6
 
-#define HEADER_1 0xab
-#define HEADER_2 0xcd
-#define TRAILER_1 0xe1
-#define TRAILER_2 0xe2
+#define HEADER_1 0xAB
+#define HEADER_2 0xCD
+#define TRAILER_1 0xE1
+#define TRAILER_2 0xE2
 
 #define DOOR_CONTROL 0x00 
 #define DOOR_A_ID 0x00
@@ -43,9 +49,6 @@
 #define LED_ID 03
 //Define for flash
 #define FLASH_ID 04
-
-
-
 
 int flush_buffer(HANDLE port);
 int input_data(unsigned char* writebuf);
@@ -111,9 +114,9 @@ HANDLE open_port(const char* device, unsigned long baud_rate, unsigned char bit_
     // Configure read and write operations to time out after 100 ms.
     COMMTIMEOUTS timeouts = { 0 };
     timeouts.ReadIntervalTimeout = 0;
-    timeouts.ReadTotalTimeoutConstant = 1000;
+    timeouts.ReadTotalTimeoutConstant = 5000;
     timeouts.ReadTotalTimeoutMultiplier = 0;
-    timeouts.WriteTotalTimeoutConstant = 1000;
+    timeouts.WriteTotalTimeoutConstant = 5000;
     timeouts.WriteTotalTimeoutMultiplier = 0;
 
     success = SetCommTimeouts(port, &timeouts);
@@ -293,10 +296,11 @@ int main()
     do {
         printf("\n==================================\n");
         printf("\nChoose Option u need"); 
-        printf("\nPress '1': Open door");
-        printf("\nPress '2': Open light");
+        printf("\nPress '1': Control door");
+        printf("\nPress '2': Control light");
         printf("\nPress '3': Read door status");
         printf("\nPress '4': Control LED");
+        printf("\nPress '5': Read Temperature");
         printf("\nPress '0': exit");
         printf("\nOption:  ");
         while ((sel = getchar()) == '\n');
@@ -401,22 +405,36 @@ int main()
                 loop = 1;
             //wait response
             status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
-            if (status == RET_FAIL) {
-                loop = 1;
-            }
-            else {
+            if (status == RET_SUCCESS) {
                 printf("\nReceiving data successed! \nReceived data after request read status :\n");
                 for (int g = 0; g < RX_buf_len; g++) {
                     printf("\t%x", RX_buf[g]);
                 }
+                if (RX_buf[4] == DOOR_A_ID)
+                {
+                    if (RX_buf[5] == READ_STATUS_DOOR_OPEN)
+                        printf("Door A: OPEN");
+                    else
+                        printf("Door A: CLOSE");
+                }
+                else
+                {
+                    if (RX_buf[5] == READ_STATUS_DOOR_OPEN)
+                        printf("Door A: OPEN");
+                    else
+                        printf("Door A: CLOSE");
+                }
+
             }
             break;
+        
 
             //Case 4 for control led
         case '4':
             //Enter time which setup for led hour_minute_second
-            //Struct off data : TX_buf[0] - TX_buf[1] - TX_buf[2]
-            //                     Hour   -   Minute  -  Second
+            //Struct of data : 
+            // TX_buf[0] - TX_buf[1] - TX_buf[2]
+            //   Hour   -   Minute  -  Second
             printf("\nEnter time for led ");
             int led_hour,led_min,led_sec;
             printf("\nEnter time: Hour = ");
@@ -431,7 +449,6 @@ int main()
             //Init data
             CMD = LED_ID;
 
-
             TX_buf_len = 3;
             printf("\nWarning: Now, Data is transmit with HEX data");
             printf("\nThe receiver will be change HEX data to DEC data\n");
@@ -442,10 +459,36 @@ int main()
             printf("\nCompleted setup led");
             break;
 
+            //Case 5 request to MCU that it need read temperature
+        case '5':
+            //This case only request to MCU that it need read temperature
 
+            //Init data
+            CMD = FLASH_ID;
+            TX_buf_len = 1;
 
+            //Compose packet
+            TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
+            //Start transmit
+            status = uart_transmit(port, TX_packet, TX_packet_len);
+            printf("\nCompleted setup led");
+            break;
 
-
+            //After send request read temperature, Take feedback from MCU
+            if (status == RET_FAIL)
+                loop = 1;
+            //wait response
+            status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
+            if (status == RET_FAIL) {
+                loop = 1;
+            }
+            else {
+                printf("\nReceiving data successed! \nReceived data after request read temperature :\n");
+                //This code print all of data receive. U should change that to show data what u need
+                for (int g = 0; g < RX_buf_len; g++) {
+                    printf("\t%x", RX_buf[g]);
+                }
+            }
         case '0':
             loop = 1;
             break;
@@ -459,5 +502,4 @@ int main()
         return RET_FAIL;
     }
     return RET_NONE;
-
 }
