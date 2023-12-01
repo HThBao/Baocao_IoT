@@ -50,6 +50,8 @@
 //Define for flash
 #define FLASH_ID 04
 
+#define RANDOM1 06
+
 int flush_buffer(HANDLE port);
 int input_data(unsigned char* writebuf);
 HANDLE open_port(const char* device, unsigned long baud_rate, unsigned char bit_size, unsigned char parity);
@@ -407,22 +409,23 @@ int main()
             status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
             if (status == RET_SUCCESS) {
                 printf("\nReceiving data successed! \nReceived data after request read status :\n");
-                for (int g = 0; g < RX_buf_len; g++) {
-                    printf("\t%x", RX_buf[g]);
+                printf("\n Data receive: ");
+                for (int i = 0; i < RX_buf_len; i++) {
+                    printf("\t%x", RX_buf[i]);
                 }
-                if (RX_buf[4] == DOOR_A_ID)
+                if (RX_buf[0] == DOOR_A_ID)
                 {
-                    if (RX_buf[5] == READ_STATUS_DOOR_OPEN)
-                        printf("Door A: OPEN");
+                    if (RX_buf[1] == READ_STATUS_DOOR_OPEN)
+                        printf("\nDoor A: OPEN");
                     else
-                        printf("Door A: CLOSE");
+                        printf("\nDoor A: CLOSE");
                 }
                 else
                 {
-                    if (RX_buf[5] == READ_STATUS_DOOR_OPEN)
-                        printf("Door A: OPEN");
+                    if (RX_buf[1] == READ_STATUS_DOOR_OPEN)
+                        printf("\nDoor B: OPEN");
                     else
-                        printf("Door A: CLOSE");
+                        printf("\nDoor B: CLOSE");
                 }
 
             }
@@ -471,7 +474,7 @@ int main()
             TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
             //Start transmit
             status = uart_transmit(port, TX_packet, TX_packet_len);
-            printf("\nCompleted setup led");
+            printf("\nCompleted Request temperature data");
             break;
 
             //After send request read temperature, Take feedback from MCU
@@ -479,15 +482,14 @@ int main()
                 loop = 1;
             //wait response
             status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
-            if (status == RET_FAIL) {
-                loop = 1;
-            }
-            else {
-                printf("\nReceiving data successed! \nReceived data after request read temperature :\n");
-                //This code print all of data receive. U should change that to show data what u need
-                for (int g = 0; g < RX_buf_len; g++) {
-                    printf("\t%x", RX_buf[g]);
+            if (status == RET_SUCCESS) {
+                printf("\nReceiving data successed! \nReceived data after request read status :\n");
+                printf("\n Data receive temperature : ");
+                for (int i = 0; i < RX_buf_len ; i++) {
+                    printf("\t%x", RX_buf[i]);
                 }
+
+
             }
         case '0':
             loop = 1;
