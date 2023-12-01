@@ -208,12 +208,6 @@ void doorcontrol_function(int data[])
 //lIGHT CONTROL ----------------------------
 void lightcontrol_function(int data[])
 {
-  /*struct of data for light: 
-  data[0] - header
-  data[1] - process
-  data[2] - LIGHT_ID
-  data[3] - LIGHT_STATUS
-  */
   Serial.print("\n Doing: Control Light ");
   if(data[4] == LIGHT_A_ID)
   {
@@ -252,10 +246,10 @@ void readstatusdoor_function(int data[])
   //It receive data about id door then check status that door, final it resend data to PC
   
   tx_buf_len =  2; //It include DoorID and DoorStatus
-  //Example: Read status door is opening now.
+  //Example: Read status door is Closing now.
   cmd = data[2];        //data[2] is CMD from PC send to MCU.
   tx_buf[0] = data[4]; //data[4] is DoorID which PC need check status
-  tx_buf[1] = READ_STATUS_DOOR_OPEN;
+  tx_buf[1] = READ_STATUS_DOOR_CLOSE;
   compose_packet();
   uart_transmit();
   Serial.print("\n Reading status of door ");
@@ -264,13 +258,27 @@ void readstatusdoor_function(int data[])
 void led_control_function(int data[])
 {
   //Call function to setup time to led
+  
+  
   Serial.print("\n setup time to led ");
+  Serial.print("\nHour: ");Serial.println(data[4]);
+  Serial.print("\nMin: ");Serial.println(data[5]);
+  Serial.print("\nSec: ");Serial.println(data[6]);
+
 }
 //Read Temperature -----------------------------
 void read_temperature_function(int data[])
 {
-  //Call function to setup time to led
+  //Call function read sensor then return data to PC
   Serial.print("\n Read Temperature from sensor ");
+  tx_buf_len =  1; //Only return data of temperature
+  //Example: Temperature is 32oC now.
+  int data_temperature = 50;
+  cmd = FLASH_ID;        //data[2] is CMD from PC send to MCU.
+  tx_buf[0] = data_temperature;
+  compose_packet();
+  uart_transmit();
+  Serial.print("\nReturn temperature data to PC ");
 }
 
 
