@@ -43,7 +43,7 @@
 //Define for Led
 #define LED_ID 02
 //Define for Accelerometer
-#define Accelerometer 03
+#define ACCELEROMETER 03
 //Define for flash
 #define FLASH_ID 04
 //Define for RFID
@@ -381,7 +381,7 @@ int main()
                     else
                         printf("\nLight A: Turn off");
                 }
-                else
+                if (RX_buf[0] == LIGHT_B_ID)
                 {
                     if (RX_buf[1] == READ_STATUS_LIGHT_ON)
                         printf("\nLight B: Turn on");
@@ -421,7 +421,7 @@ int main()
             break;
 
         case '4':
-            CMD = Accelerometer;
+            CMD = ACCELEROMETER;
             //define length for this option
             TX_buf_len = 1;
             //Compose packet
@@ -448,25 +448,26 @@ int main()
             //Init data
             CMD = FLASH_ID;
             TX_buf_len = 1;
-            TX_buf[0] = 0x00;
+            //TX_buf[0] = 0x00;
             //Compose packet
             TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
             //Start transmit
             status = uart_transmit(port, TX_packet, TX_packet_len);
             printf("\nCompleted Request temperature data");
-            break;
-            //After send request read temperature, Take feedback from MCU
+            //After send request read Accelerometer, Take feedback from MCU
             if (status == RET_FAIL)
                 loop = 1;
             //wait response
             status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
             if (status == RET_SUCCESS) {
                 printf("\nReceiving data successed! \nReceived data after request read status :\n");
-                printf("\n Data receive temperature : ");
+                printf("\n Data receive: ");
                 for (int i = 0; i < RX_buf_len; i++) {
                     printf("\t%x", RX_buf[i]);
                 }
             }
+
+            break;
         case '0':
             loop = 1;
             break;
