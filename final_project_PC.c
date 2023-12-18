@@ -46,8 +46,15 @@
 #define ACCELEROMETER 03
 //Define for flash
 #define FLASH_ID 04
-//Define for RFID
-#define RFID 05
+//Define for check uuid
+#define CHECK_UUID 05
+
+
+//Define for program
+#define WAITING 01
+#define ON_PROGRAM 02
+#define END_PROGRAM 03
+
 
 int flush_buffer(HANDLE port);
 int input_data(unsigned char* writebuf);
@@ -86,16 +93,16 @@ int flush_buffer(HANDLE port) {
 }
 
 HANDLE open_port(const char* device, unsigned long baud_rate, unsigned char bit_size, unsigned char parity) {
-    HANDLE port 
+    HANDLE port
         = CreateFileA(device, GENERIC_READ | GENERIC_WRITE, 0, NULL,
-        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
         port == INVALID_HANDLE_VALUE)
     {
         return INVALID_HANDLE_VALUE;
@@ -259,7 +266,7 @@ int compose_packet(unsigned int CMD, unsigned int data_length, unsigned char* da
     frame_length += data_length;
 
     printf("\Packet after compose: ");
-    for (int a = 0; a < (i+2); a++) {
+    for (int a = 0; a < (i + 2); a++) {
         printf("\t%x", packet[a]);
 
     }
@@ -285,7 +292,8 @@ int main()
     unsigned int TX_packet_len = 0;
     unsigned char cmd;
     unsigned int address;
-
+    int status_run = WAITING;
+    int program = 0;
     // open serial port
     HANDLE port = open_port(device, baud_rate, bit_size, parity);
     if (port == INVALID_HANDLE_VALUE) {
@@ -293,168 +301,21 @@ int main()
     }
 
     do {
-        printf("\n==================================\n");
-        printf("\nChoose Option u need");
-        printf("\nPress '1': Control light");
-        printf("\nPress '2': Read light status");
-        printf("\nPress '3': Control LED");
-        printf("\nPress '4': Read Accelerometer");
-        printf("\nPress '5': Read Temperature");
-        printf("\nPress '0': exit");
-        printf("\nOption:  ");
-        while ((sel = getchar()) == '\n');
-        switch (sel) {
-            //Case 1 for control light
-        case '1':
-            //Choice light
-            printf("\nEnter light id u wana control ");
-            printf("\nPress '1': Control light A ");
-            printf("\nPress '2': Control light B ");
-            printf("\nLight ID: ");
-            int light_id;
-            scanf("%d", &light_id);
-            //Choice Status
-            printf("\nEnter status light ");
-            printf("\nPress '1': Turn on light");
-            printf("\nPress '2': Turn off light");
-            printf("\nStatus: ");
-            int light_status;
-            scanf("%d", &light_status);
+        switch (status_run)
+        {
+        case WAITING:
+            //Call to MCU for request the UUID
+            //We will check UUID at MCU then return true or false to PC 
+            CMD = CHECK_UUID;
             //Init data
-            CMD = LIGHT_CONTROL;
-
-            if (light_id == 1)
-                TX_buf[0] = LIGHT_A_ID;
-            if (light_id == 2)
-                TX_buf[0] = LIGHT_B_ID;
-
-            if (light_status == 1)
-                TX_buf[1] = LIGHT_ON;
-            if (light_status == 2)
-                TX_buf[1] = LIGHT_OFF;
-            //define length for this option
-            TX_buf_len = 2;
-            //Compose packet
-            TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
-            //Start transmit
-            status = uart_transmit(port, TX_packet, TX_packet_len);
-            printf("\nCompleted control light");
-            break;
-            //Case 2 for Read light door
-        case '2':
-            //Choice light wana read status
-            printf("\nEnter light id u wana read status ");
-            printf("\nPress '1': Read status light A ");
-            printf("\nPress '2': Read status light B ");
-            printf("\Light ID: ");
-            int light_id_status;
-            scanf("%d", &light_id_status);
-
-            CMD = READ_STATUS_LIGHT;
-
-            if (light_id_status == 1)
-                TX_buf[0] = LIGHT_A_ID;
-            if (light_id_status == 2)
-                TX_buf[0] = LIGHT_B_ID;
-
-            //define length for this option
-            TX_buf_len = 1;
-            //Compose packet
-            TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
-            status = uart_transmit(port, TX_packet, TX_packet_len);
-
-            //After send request read status, Take feedback from MCU
-            if (status == RET_FAIL)
-                loop = 1;
-            //wait response
-            status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
-            if (status == RET_SUCCESS) {
-                printf("\nReceiving data successed! \nReceived data after request read status :\n");
-                printf("\n Data receive: /t  ");
-                for (int i = 0; i < RX_buf_len; i++) {
-                    printf("\t%x", RX_buf[i]);
-                }
-                if (RX_buf[0] == LIGHT_A_ID)
-                {
-                    if (RX_buf[1] == READ_STATUS_LIGHT_ON)
-                        printf("\nLight A: Turn on");
-                    else
-                        printf("\nLight A: Turn off");
-                }
-                if (RX_buf[0] == LIGHT_B_ID)
-                {
-                    if (RX_buf[1] == READ_STATUS_LIGHT_ON)
-                        printf("\nLight B: Turn on");
-                    else
-                        printf("\nLight B: Turn off");
-                }
-            }
-            break;
-            //Case 3 for control led
-        case '3':
-            //Enter time which setup for led hour_minute_second
-            //Struct of data : 
-            // TX_buf[0] - TX_buf[1] - TX_buf[2]
-            //   Hour   -   Minute  -  Second
-            printf("\nEnter time for led ");
-            int led_hour, led_min, led_sec;
-            printf("\nEnter time: Hour = ");
-            scanf("%d", &led_hour);
-            TX_buf[0] = led_hour;
-            printf("\nEnter time: Minute = ");
-            scanf("%d", &led_min);
-            TX_buf[1] = led_min;
-            printf("\nEnter time: Second = ");
-            scanf("%d", &led_sec);
-            TX_buf[2] = led_sec;
-            //Init data
-            CMD = LED_ID;
-
-            TX_buf_len = 3;
-            printf("\nWarning: Now, Data is transmit with HEX data");
-            printf("\nThe receiver will be change HEX data to DEC data\n");
-            //Compose packet
-            TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
-            //Start transmit
-            status = uart_transmit(port, TX_packet, TX_packet_len);
-            printf("\nCompleted setup led");
-            break;
-
-        case '4':
-            CMD = ACCELEROMETER;
-            //define length for this option
-            TX_buf_len = 1;
-            //Compose packet
-            TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
-            status = uart_transmit(port, TX_packet, TX_packet_len);
-            printf("\nCompleted request read Accelerometer");
-            //After send request read Accelerometer, Take feedback from MCU
-            if (status == RET_FAIL)
-                loop = 1;
-            //wait response
-            status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
-            if (status == RET_SUCCESS) {
-                printf("\nReceiving data successed! \nReceived data after request read status :\n");
-                printf("\n Data receive: ");
-                for (int i = 0; i < RX_buf_len; i++) {
-                    printf("\t%x", RX_buf[i]);
-                }
-            }       
-                break;
-                //Case 5 request to MCU that it need read temperature
-        case '5':
-            //This case only request to MCU that it need read temperature
-
-            //Init data
-            CMD = FLASH_ID;
             TX_buf_len = 1;
             //TX_buf[0] = 0x00;
             //Compose packet
             TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
             //Start transmit
             status = uart_transmit(port, TX_packet, TX_packet_len);
-            printf("\nCompleted Request temperature data");
-            //After send request read Accelerometer, Take feedback from MCU
+            printf("\nCompleted Request UUID data");
+            //After send request UUID, Take feedback from MCU
             if (status == RET_FAIL)
                 loop = 1;
             //wait response
@@ -465,20 +326,215 @@ int main()
                 for (int i = 0; i < RX_buf_len; i++) {
                     printf("\t%x", RX_buf[i]);
                 }
+                if (RX_buf[0] == 1)
+                {
+                    printf("\n True UUID \n");
+                    status_run = ON_PROGRAM;
+                }
+                else
+                {
+                    printf("\n Wrong UUID ");
+                    printf("\n Please take u card again ");
+                }
             }
-
             break;
-        case '0':
-            loop = 1;
-            break;
-            }
-        } while (loop != 1);
 
-        // Close the serial port.
-        if (!CloseHandle(port))
-        {
-            printf("CloseHandle() failed\n");
-            return RET_FAIL;
+        case ON_PROGRAM:
+            do {
+                printf("\n==================================\n");
+                printf("\nChoose Option u need");
+                printf("\nPress '1': Control light");
+                printf("\nPress '2': Read light status");
+                printf("\nPress '3': Control LED");
+                printf("\nPress '4': Read Accelerometer");
+                printf("\nPress '5': Read Temperature");
+                printf("\nPress '0': exit");
+                printf("\nOption:  ");
+                while ((sel = getchar()) == '\n');
+                switch (sel) {
+                    //Case 1 for control light
+                case '1':
+                    //Choice light
+                    printf("\nEnter light id u wana control ");
+                    printf("\nPress '1': Control light A ");
+                    printf("\nPress '2': Control light B ");
+                    printf("\nLight ID: ");
+                    int light_id;
+                    scanf("%d", &light_id);
+                    //Choice Status
+                    printf("\nEnter status light ");
+                    printf("\nPress '1': Turn on light");
+                    printf("\nPress '2': Turn off light");
+                    printf("\nStatus: ");
+                    int light_status;
+                    scanf("%d", &light_status);
+                    //Init data
+                    CMD = LIGHT_CONTROL;
+
+                    if (light_id == 1)
+                        TX_buf[0] = LIGHT_A_ID;
+                    if (light_id == 2)
+                        TX_buf[0] = LIGHT_B_ID;
+
+                    if (light_status == 1)
+                        TX_buf[1] = LIGHT_ON;
+                    if (light_status == 2)
+                        TX_buf[1] = LIGHT_OFF;
+                    //define length for this option
+                    TX_buf_len = 2;
+                    //Compose packet
+                    TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
+                    //Start transmit
+                    status = uart_transmit(port, TX_packet, TX_packet_len);
+                    printf("\nCompleted control light");
+                    break;
+                    //Case 2 for Read light door
+                case '2':
+                    //Choice light wana read status
+                    printf("\nEnter light id u wana read status ");
+                    printf("\nPress '1': Read status light A ");
+                    printf("\nPress '2': Read status light B ");
+                    printf("\Light ID: ");
+                    int light_id_status;
+                    scanf("%d", &light_id_status);
+
+                    CMD = READ_STATUS_LIGHT;
+
+                    if (light_id_status == 1)
+                        TX_buf[0] = LIGHT_A_ID;
+                    if (light_id_status == 2)
+                        TX_buf[0] = LIGHT_B_ID;
+
+                    //define length for this option
+                    TX_buf_len = 1;
+                    //Compose packet
+                    TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
+                    status = uart_transmit(port, TX_packet, TX_packet_len);
+
+                    //After send request read status, Take feedback from MCU
+                    if (status == RET_FAIL)
+                        loop = 1;
+                    //wait response
+                    status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
+                    if (status == RET_SUCCESS) {
+                        printf("\nReceiving data successed! \nReceived data after request read status :\n");
+                        printf("\n Data receive: /t  ");
+                        for (int i = 0; i < RX_buf_len; i++) {
+                            printf("\t%x", RX_buf[i]);
+                        }
+                        if (RX_buf[0] == LIGHT_A_ID)
+                        {
+                            if (RX_buf[1] == READ_STATUS_LIGHT_ON)
+                                printf("\nLight A: Turn on");
+                            else
+                                printf("\nLight A: Turn off");
+                        }
+                        if (RX_buf[0] == LIGHT_B_ID)
+                        {
+                            if (RX_buf[1] == READ_STATUS_LIGHT_ON)
+                                printf("\nLight B: Turn on");
+                            else
+                                printf("\nLight B: Turn off");
+                        }
+                    }
+                    break;
+                    //Case 3 for control led
+                case '3':
+                    //Enter time which setup for led hour_minute_second
+                    //Struct of data : 
+                    // TX_buf[0] - TX_buf[1] - TX_buf[2]
+                    //   Hour   -   Minute  -  Second
+                    printf("\nEnter time for led ");
+                    int led_hour, led_min, led_sec;
+                    printf("\nEnter time: Hour = ");
+                    scanf("%d", &led_hour);
+                    TX_buf[0] = led_hour;
+                    printf("\nEnter time: Minute = ");
+                    scanf("%d", &led_min);
+                    TX_buf[1] = led_min;
+                    //Init data
+                    CMD = LED_ID;
+
+                    TX_buf_len = 2;
+                    printf("\nWarning: Now, Data is transmit with HEX data");
+                    printf("\nThe receiver will be change HEX data to DEC data\n");
+                    //Compose packet
+                    TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
+                    //Start transmit
+                    status = uart_transmit(port, TX_packet, TX_packet_len);
+                    printf("\nCompleted setup led");
+                    break;
+
+                case '4':
+                    CMD = ACCELEROMETER;
+                    //define length for this option
+                    TX_buf_len = 1;
+                    //Compose packet
+                    TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
+                    status = uart_transmit(port, TX_packet, TX_packet_len);
+                    printf("\nCompleted request read Accelerometer");
+                    //After send request read Accelerometer, Take feedback from MCU
+                    if (status == RET_FAIL)
+                        loop = 1;
+                    //wait response
+                    status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
+                    if (status == RET_SUCCESS) {
+                        printf("\nReceiving data successed! \nReceived data after request read status :\n");
+                        printf("\n Data receive: ");
+                        for (int i = 0; i < RX_buf_len; i++) {
+                            printf("\t%x", RX_buf[i]);
+                        }
+                    }
+                    break;
+                    //Case 5 request to MCU that it need read temperature
+                case '5':
+                    //This case only request to MCU that it need read temperature
+
+                    //Init data
+                    CMD = FLASH_ID;
+                    TX_buf_len = 1;
+                    //TX_buf[0] = 0x00;
+                    //Compose packet
+                    TX_packet_len = compose_packet(CMD, TX_buf_len, TX_buf, TX_packet);
+                    //Start transmit
+                    status = uart_transmit(port, TX_packet, TX_packet_len);
+                    printf("\nCompleted Request temperature data");
+                    //After send request read Accelerometer, Take feedback from MCU
+                    if (status == RET_FAIL)
+                        loop = 1;
+                    //wait response
+                    status = uart_receive(port, RX_buf, &RX_buf_len, &cmd);
+                    if (status == RET_SUCCESS) {
+                        printf("\nReceiving data successed! \nReceived data after request read status :\n");
+                        printf("\n Data receive: ");
+                        for (int i = 0; i < RX_buf_len; i++) {
+                            printf("\t%x", RX_buf[i]);
+                        }
+                    }
+
+                    break;
+                case '0':
+                    loop = 1;
+                    status_run = WAITING;
+                    break;
+                }
+            } while (loop != 1);
+            break;
+            //end case on_program
+        case END_PROGRAM:
+            program = 1;
+            break;
+
+        default:
+            printf("\n Wrong status_run ");
+            break;
         }
-        return RET_NONE;
+    } while (program != 1);
+    // Close the serial port.
+    if (!CloseHandle(port))
+    {
+        printf("CloseHandle() failed\n");
+        return RET_FAIL;
+    }
+    return RET_NONE;
 }
