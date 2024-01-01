@@ -7,25 +7,26 @@ Write Light 1 ----------------- D2
 Write Light 2 ----------------- D3 
 Read Light 1 ------------------ D6  
 Read Light 2 ------------------ D7 
- *     
- * LM35 (Temperature Sensor) ------ Arduino
+
+* LM35 (Temperature Sensor) ------ Arduino
 VCC --------------------------------  5V
 OUT --------------------------------  A0
 GND ------------------ -------------  GND
- * 
-Led 7 Segment       Arduino
+ 
+* Led 7 Segment       Arduino
 Vcc ------------------ 5V
 SCLK ----------------- D30
 RCLK ----------------- D31
 DIO ------------------ D32 
 GND ------------------ GND
-MPU 6050(Accelerometer sensor)-- Arduino
+
+* MPU 6050(Accelerometer sensor)-- Arduino
 VCC  ---------------------------- 5V
 GND ----------------------------- GND
 SCL  ---------------------------- SCL
 SDA  ------------------ --------- SDA   
   
-*RFID-RC522 -------Arduino(Mega)
+* RFID-RC522 -------Arduino(Mega)
 SDA ------------------ 53
 SCK ------------------ 52
 MOSI ----------------- 51
